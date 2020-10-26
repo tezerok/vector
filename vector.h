@@ -30,21 +30,14 @@ public:
 		storage(size),
 		_size(size)
 	{
-		std::uninitialized_default_construct_n(storage, size);
+		std::uninitialized_value_construct_n(storage, size); // value initialization, as in std::vector
 	}
 
-	explicit vector(size_type size, const T& elem) :
+	vector(size_type size, const T& elem) :
 		storage(size),
 		_size(size)
 	{
-		std::uninitialized_fill_n(storage, size, elem);
-	}
-
-	vector(std::initializer_list<T> ilist) :
-		storage(ilist.size()),
-		_size(ilist.size())
-	{
-		std::uninitialized_copy_n(ilist.begin(), ilist.size(), storage.get());
+		std::uninitialized_fill_n(storage.get(), size, elem);
 	}
 
 	vector(vector&& x) noexcept :
@@ -60,6 +53,26 @@ public:
 		std::uninitialized_copy_n(x.storage.get(), x._size, storage.get());
 	}
 
+	vector(std::initializer_list<T> ilist) :
+		storage(ilist.size()),
+		_size(ilist.size())
+	{
+		std::uninitialized_copy(ilist.begin(), ilist.end(), storage.get());
+	}
+
+	template <typename InputIt,
+		typename = std::enable_if_t< // make sure that InputIt is an iterator to prevent overload resolution ambiguity with (size, elem) ctor
+			std::is_convertible_v<
+				typename std::iterator_traits<InputIt>::iterator_category,
+				std::input_iterator_tag
+			>>> // requires std::input_iterator<InputIt> // C++20
+	vector(InputIt first, InputIt last) :
+		storage(std::distance(first, last)),
+		_size(std::distance(first, last))
+	{
+		std::uninitialized_copy(first, last, storage.get());
+	}
+
 	vector& operator=(vector&& x) noexcept
 	{
 		swap(*this, x);
@@ -69,6 +82,13 @@ public:
 	vector& operator=(vector x)
 	{
 		swap(*this, x);
+		return *this;
+	}
+
+	vector<T>& operator=(std::initializer_list<T> ilist)
+	{
+		vector<T> newVector(ilist);
+		swap(*this, newVector);
 		return *this;
 	}
 
@@ -84,6 +104,29 @@ public:
 		std::destroy_n(storage.get(), size());
 	}
 
+	void assign(size_type count, const T& value)
+	{
+		vector<T> newVector(count, value);
+		swap(*this, newVector);
+	}
+
+	template <typename InputIt,
+		typename = std::enable_if_t< // make sure that InputIt is an iterator to prevent overload resolution ambiguity with assign(size, elem)
+			std::is_convertible_v<
+				typename std::iterator_traits<InputIt>::iterator_category,
+				std::input_iterator_tag
+			>>> // requires std::input_iterator<InputIt> // C++20
+	void assign(InputIt first, InputIt last)
+	{
+		vector<T> newVector(first, last);
+		swap(*this, newVector);
+	}
+
+	void assign(std::initializer_list<T> ilist)
+	{
+		*this = ilist;
+	}
+
 	size_type capacity() const { return storage.size(); }
 	size_type size() const { return _size; }
 	bool empty() const { return size() == 0; }
@@ -93,12 +136,14 @@ public:
 	reference operator[](size_type index) { return storage[index]; }
 	const_reference operator[](size_type index) const { return storage[index]; }
 
-	reference at(size_type index) {
+	reference at(size_type index)
+	{
 		if (index > size())
 			throw std::out_of_range{"out-of-range access detected (vector)"};
 		return storage[index];
 	}
-	const_reference at(size_type index) const {
+	const_reference at(size_type index) const
+	{
 		if (index > size())
 			throw std::out_of_range{"out-of-range access detected (vector)"};
 		return storage[index];
@@ -146,10 +191,15 @@ public:
 	void resize(size_type newSize);
 	void reserve(size_type newCapacity);
 	void clear();
+	void shrink_to_fit();
 
 private:
 	uninitialized_memory<T> storage;
 	size_type _size;
+
+	// Forces capacity change (even if newCap < oldCap)
+	// Assumes newCap >= size
+	void force_capacity(size_type newCapacity);
 };
 
 template <typename T>
@@ -225,9 +275,9 @@ void vector<T>::resize(size_type newSize)
 		std::destroy(begin()+newSize, end());
 	}
 	else if (newSize > size()) {
-		// Reserve exact amount of memory and default construct
+		// Reserve exact amount of memory and value constructs
 		reserve(newSize);
-		std::uninitialized_default_construct_n(end(), newSize-size());
+		std::uninitialized_value_construct_n(end(), newSize-size()); // value initialization, as in std::vector
 	}
 	_size = newSize;
 }
@@ -237,6 +287,28 @@ void vector<T>::reserve(size_type newCapacity)
 {
 	if (newCapacity <= capacity())
 		return;
+	force_capacity(newCapacity);
+}
+
+template <typename T>
+void vector<T>::clear()
+{
+	std::destroy(begin(), end());
+	_size = 0;
+}
+
+template <typename T>
+void vector<T>::shrink_to_fit()
+{
+	if (size() == capacity())
+		return;
+	force_capacity(size());
+}
+
+template <typename T>
+void vector<T>::force_capacity(size_type newCapacity)
+{
+	assert(newCapacity >= size());
 
 	// Note: currently, there's no 'realloc' mechanism - possible improvement
 	uninitialized_memory<T> newStorage(newCapacity);
@@ -257,13 +329,6 @@ void vector<T>::reserve(size_type newCapacity)
 	}
 
 	std::swap(storage, newStorage);
-}
-
-template <typename T>
-void vector<T>::clear()
-{
-	std::destroy(begin(), end());
-	_size = 0;
 }
 
 // Relational operations:

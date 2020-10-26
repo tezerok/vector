@@ -37,6 +37,9 @@ struct CtorThrower {
 
 int main()
 {
+	using std::begin;
+	using std::end;
+
 	// Test basic operations with a trivial data type
 	{
 		vector<int> v;
@@ -122,6 +125,64 @@ int main()
 			assertm(!(vvv > vv), "copy, then >");
 			assertm(vvv <= vv, "copy, then <=");
 			assertm(!(vvv >= vv), "copy, then >=");
+		}
+	}
+
+	{	// Test copies
+		vector<int> v;
+		std::generate_n(std::back_inserter(v), 10, [i=0] () mutable { auto ret = i*i; ++i; return ret; });
+		for (auto i : v)
+			std::cout << i << " ";
+		std::cout << "\n";
+
+		{
+			vector<int> c(v);
+			assertm(c == v, "copy ctor");
+		}
+		{
+			vector<int> c(begin(v), end(v));
+			assertm(c == v, "range ctor");
+		}
+		{
+			vector<int> c;
+			c = v;
+			assertm(c == v, "copy=");
+		}
+		{
+			vector<int> c;
+			c.assign(begin(v), end(v));
+			assertm(c == v, "range assign()");
+		}
+	}
+
+	{	// Test filling the vector
+		vector<int> v = {1, 2, 3};
+
+		{
+			vector<int> w = {1, 2, 3};
+			assertm(v == w, "ilist ctor");
+		}
+		{
+			vector<int> w;
+			w = {1, 2, 3};
+			assertm(v == w, "ilist=");
+		}
+		{
+			vector<int> w;
+			w.assign({1, 2, 3});
+			assertm(v == w, "ilist assign()");
+		}
+
+		vector<int> x = {1, 1, 1, 1};
+
+		{
+			vector<int> y(4, 1);
+			assertm(x == y, "fill ctor");
+		}
+		{
+			vector<int> y;
+			y.assign(4, 1);
+			assertm(x == y, "fill assign()");
 		}
 	}
 
