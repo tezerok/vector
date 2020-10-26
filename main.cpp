@@ -1,7 +1,10 @@
 #include "vector.h"
 #include <iostream>
 
+// This file contains (mostly manual) tests of the vector
+
 // Helper class to test vector's exception safety
+// Throws an exception on 'throwN'-th construction
 template <int throwN>
 struct CtorThrower {
 	int i;
@@ -62,6 +65,15 @@ int main()
 		v.emplace(v.begin()+5, 5);
 
 		for (auto i : v)
+			std::cout << i << " ";
+		std::cout << "\n";
+
+		vector<int> vv = {11, 22, 33};
+		vv.emplace_back(44);
+		vv.reserve(64);
+		vv.emplace_back(55);
+		vv.resize(8);
+		for (auto i : vv)
 			std::cout << i << " ";
 		std::cout << "\n";
 	}

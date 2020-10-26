@@ -40,11 +40,11 @@ public:
 		std::uninitialized_fill_n(storage, size, elem);
 	}
 
-	explicit vector(std::initializer_list<T> ilist) :
+	vector(std::initializer_list<T> ilist) :
 		storage(ilist.size()),
 		_size(ilist.size())
 	{
-		std::uninitialized_copy(begin(storage), end(storage), begin(ilist));
+		std::uninitialized_copy_n(ilist.begin(), ilist.size(), storage.get());
 	}
 
 	vector(vector&& x) noexcept :
@@ -72,7 +72,7 @@ public:
 		return *this;
 	}
 
-	friend void swap(vector& a, vector& b)
+	friend void swap(vector& a, vector& b) noexcept
 	{
 		using std::swap;
 		swap(a.storage, b.storage);
