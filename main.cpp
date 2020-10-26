@@ -1,7 +1,10 @@
 #include "vector.h"
 #include <iostream>
+#include <cassert>
+// (void) cast used to remove warnings
+#define assertm(val, msg) assert(((void)msg, val))
 
-// This file contains (mostly manual) tests of the vector
+// This file contains a combination of automatic/manual tests of the vector
 
 // Helper class to test vector's exception safety
 // Throws an exception on 'throwN'-th construction
@@ -50,10 +53,20 @@ int main()
 			std::cout << i << " ";
 		std::cout << "\n";
 
+		{	// Test push_backs
+			vector<int> cmpV = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+			assertm(cmpV == v, "push_back + sort");
+		}
+
 		v.erase(v.begin()+4);
 		v.erase(v.begin()+4);
 		v.erase(v.begin());
 		v.erase(v.end()-1);
+
+		{	// Test erase
+			vector<int> cmpV = {2, 3, 4, 7, 8, 9};
+			assertm(cmpV == v, "push_back + sort");
+		}
 
 		for (auto i : v)
 			std::cout << i << " ";
@@ -61,13 +74,19 @@ int main()
 
 		v.insert(v.begin(), 1);
 		v.emplace(v.end(), 10);
-		v.emplace(v.begin()+5, 6);
-		v.emplace(v.begin()+5, 5);
+		v.emplace(v.begin()+4, 6);
+		v.emplace(v.begin()+4, 5);
+
+		{	// Test inserts/emplaces
+			vector<int> cmpV = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+			assertm(cmpV == v, "insert/emplace");
+		}
 
 		for (auto i : v)
 			std::cout << i << " ";
 		std::cout << "\n";
 
+		// Another test vector
 		vector<int> vv = {11, 22, 33};
 		vv.emplace_back(44);
 		vv.reserve(64);
@@ -77,24 +96,33 @@ int main()
 			std::cout << i << " ";
 		std::cout << "\n";
 
-		vector<int> vvv = vv;
-		std::cout << (vvv == vv) << " == 1\n";
-		std::cout << (vvv < vv) << " == 0\n";
-		std::cout << (vvv > vv) << " == 0\n";
-		std::cout << (vvv <= vv) << " == 1\n";
-		std::cout << (vvv >= vv) << " == 1\n";
-		vvv[1] = 4;
-		std::cout << (vvv == vv) << " == 0\n";
-		std::cout << (vvv < vv) << " == 1\n";
-		std::cout << (vvv > vv) << " == 0\n";
-		std::cout << (vvv <= vv) << " == 1\n";
-		std::cout << (vvv >= vv) << " == 0\n";
-		vvv.erase(vvv.begin());
-		std::cout << (vvv == vv) << " == 0\n";
-		std::cout << (vvv < vv) << " == 1\n";
-		std::cout << (vvv > vv) << " == 0\n";
-		std::cout << (vvv <= vv) << " == 1\n";
-		std::cout << (vvv >= vv) << " == 0\n";
+		{	// Test reserve/resize/emplace_back
+			vector<int> cmpV = {11, 22, 33, 44, 55, 0, 0, 0};
+			assertm(cmpV == vv, "reserve/resize/emplace_back");
+		}
+
+		{	// Test relational operators
+			vector<int> vvv = vv;
+			assertm(vvv == vv, "copy, then ==");
+			assertm(!(vvv < vv), "copy, then <");
+			assertm(!(vvv > vv), "copy, then >");
+			assertm(vvv <= vv, "copy, then <=");
+			assertm(vvv >= vv, "copy, then >=");
+
+			vvv[1] = 4;
+			assertm(!(vvv == vv), "copy, then ==");
+			assertm(vvv < vv, "copy, then <");
+			assertm(!(vvv > vv), "copy, then >");
+			assertm(vvv <= vv, "copy, then <=");
+			assertm(!(vvv >= vv), "copy, then >=");
+
+			vvv.erase(vvv.begin());
+			assertm(!(vvv == vv), "copy, then ==");
+			assertm(vvv < vv, "copy, then <");
+			assertm(!(vvv > vv), "copy, then >");
+			assertm(vvv <= vv, "copy, then <=");
+			assertm(!(vvv >= vv), "copy, then >=");
+		}
 	}
 
 	// Test exception safety
