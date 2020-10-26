@@ -265,3 +265,47 @@ void vector<T>::clear()
 	std::destroy(begin(), end());
 	_size = 0;
 }
+
+// Relational operations:
+
+template <typename T>
+bool operator==(const vector<T>& a, const vector<T>& b)
+{
+	if (a.size() != b.size())
+		return false;
+	using std::begin;
+	using std::end;
+	return std::equal(begin(a), end(a), begin(b));
+}
+
+template <typename T>
+bool operator!=(const vector<T>& a, const vector<T>& b)
+{
+	return !(a == b);
+}
+
+template <typename T>
+bool operator<(const vector<T>& a, const vector<T>& b)
+{
+	using std::begin;
+	using std::end;
+	return std::lexicographical_compare(begin(a), end(a), begin(b), end(b), std::less<T>());
+}
+
+template <typename T>
+bool operator>(const vector<T>& a, const vector<T>& b)
+{
+	return b < a;
+}
+
+template <typename T>
+bool operator<=(const vector<T>& a, const vector<T>& b)
+{
+	return !(a > b);
+}
+
+template <typename T>
+bool operator>=(const vector<T>& a, const vector<T>& b)
+{
+	return !(a < b);
+}

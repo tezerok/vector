@@ -76,6 +76,25 @@ int main()
 		for (auto i : vv)
 			std::cout << i << " ";
 		std::cout << "\n";
+
+		vector<int> vvv = vv;
+		std::cout << (vvv == vv) << " == 1\n";
+		std::cout << (vvv < vv) << " == 0\n";
+		std::cout << (vvv > vv) << " == 0\n";
+		std::cout << (vvv <= vv) << " == 1\n";
+		std::cout << (vvv >= vv) << " == 1\n";
+		vvv[1] = 4;
+		std::cout << (vvv == vv) << " == 0\n";
+		std::cout << (vvv < vv) << " == 1\n";
+		std::cout << (vvv > vv) << " == 0\n";
+		std::cout << (vvv <= vv) << " == 1\n";
+		std::cout << (vvv >= vv) << " == 0\n";
+		vvv.erase(vvv.begin());
+		std::cout << (vvv == vv) << " == 0\n";
+		std::cout << (vvv < vv) << " == 1\n";
+		std::cout << (vvv > vv) << " == 0\n";
+		std::cout << (vvv <= vv) << " == 1\n";
+		std::cout << (vvv >= vv) << " == 0\n";
 	}
 
 	// Test exception safety
