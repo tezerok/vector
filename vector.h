@@ -3,6 +3,7 @@
 #include <memory>
 #include <type_traits>
 #include <cassert>
+#include <stdexcept>
 #include "uninitialized_memory.h"
 
 // Simplified implementation of std::vector.
@@ -139,13 +140,13 @@ public:
 
 	reference at(size_type index)
 	{
-		if (index > size())
+		if (index >= size())
 			throw std::out_of_range{"out-of-range access detected (vector)"};
 		return storage[index];
 	}
 	const_reference at(size_type index) const
 	{
-		if (index > size())
+		if (index >= size())
 			throw std::out_of_range{"out-of-range access detected (vector)"};
 		return storage[index];
 	}
@@ -285,7 +286,7 @@ void vector<T>::erase(vector<T>::iterator it)
 {
 	// Move assign 1 place to the left
 	std::move(it+1, end(), it);
-	// Destroy rightmost element (move assign might be implemented as swap)
+	// Destroy rightmost element
 	std::destroy_at(&storage[--_size]);
 }
 
@@ -345,12 +346,13 @@ void vector<T>::force_capacity(size_type newCapacity)
 		try {
 			std::uninitialized_move_n(storage.get(), size(), newStorage.get());
 		} catch (...) {
-			clear();
+			clear(); // clear on throw
 			throw;
 		}
 	}
 
-	std::swap(storage, newStorage);
+	std::swap(storage, newStorage); // use the new storage
+	std::destroy_n(newStorage.get(), size()); // destroy (possibly moved-from) objects in the old storage
 }
 
 // Relational operations:

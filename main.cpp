@@ -11,8 +11,6 @@
 // Throws an exception on 'throwN'-th construction
 template <int throwN>
 struct CtorThrower {
-	int i;
-
 	CtorThrower(int i = 0) : i(i) {}
 
 	// Mark this ctor as noexcept to ensure vector's nothrow guarantee
@@ -34,6 +32,26 @@ struct CtorThrower {
 		if (++instanceN == throwN)
 			throw 123;
 	}
+
+	int i;
+};
+
+// Helper class to check memory leaks when using copy-only value types
+struct CopyOnly {
+	CopyOnly(std::vector<int> v) : data(std::move(v)) {}
+
+	CopyOnly(const CopyOnly& x)
+	{
+		data = x.data;
+		std::cout << "CopyOnly copied\n";
+	}
+
+	~CopyOnly()
+	{
+		std::cout << "CopyOnly destroyed\n";
+	}
+
+	std::vector<int> data;
 };
 
 int main()
@@ -129,7 +147,8 @@ int main()
 		}
 	}
 
-	{	// Test insertion target iterator invalidation due to reallocation
+	// Test insertion target iterator invalidation due to reallocation
+	{
 		vector<std::string> v;
 		v.push_back("a");
 		v.push_back("b");
@@ -143,8 +162,8 @@ int main()
 		std::cout << "\n";
 	}
 
-
-	{	// Test copies
+	// Test copies
+	{
 		vector<int> v;
 		std::generate_n(std::back_inserter(v), 10, [i=0] () mutable { auto ret = i*i; ++i; return ret; });
 		for (auto i : v)
@@ -176,7 +195,8 @@ int main()
 		}
 	}
 
-	{	// Test filling the vector
+	// Test filling the vector
+	{
 		vector<int> v = {1, 2, 3};
 
 		{
@@ -222,5 +242,13 @@ int main()
 				std::cout << x.i << " ";
 			std::cout << "\n";
 		}
+	}
+
+	// Test copy-only value type for memory leaks (valgrind)
+	{
+		vector<CopyOnly> v;
+		v.push_back(CopyOnly({1, 2, 3}));
+		v.push_back(CopyOnly({1, 2, 3}));
+		v.push_back(CopyOnly({1, 2, 3}));
 	}
 }
