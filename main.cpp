@@ -169,6 +169,11 @@ int main()
 			c.assign(begin(v), end(v));
 			assertm(c == v, "range assign()");
 		}
+
+		{	// Test type deduction
+			auto c = vector(begin(v), end(v));
+			assertm(c == v, "range ctor 2");
+		}
 	}
 
 	{	// Test filling the vector

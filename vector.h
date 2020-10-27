@@ -396,3 +396,12 @@ bool operator>=(const vector<T>& a, const vector<T>& b)
 {
 	return !(a < b);
 }
+
+// Type deduction guide
+template <typename InputIt,
+		typename = std::enable_if_t< // require that InputIt is an actual iterator
+			std::is_convertible_v<
+				typename std::iterator_traits<InputIt>::iterator_category,
+				std::input_iterator_tag
+			>>> // requires std::input_iterator<InputIt> // C++20
+vector(InputIt, InputIt) -> vector<typename std::iterator_traits<InputIt>::value_type>;
