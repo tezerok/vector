@@ -8,7 +8,8 @@
 // Simplified implementation of std::vector.
 // Note that:
 // - this implementation doesn't use allocators
-// - strong exception guarantee ensured on insertions (depends on T's move ctor's guarantee)
+// - there is no vector<bool> specialization
+// - strong exception guarantee is ensured where possible (depends on T's move ctor's guarantee)
 template <typename T>
 class vector
 {
@@ -200,6 +201,9 @@ private:
 	// Forces capacity change (even if newCap < oldCap)
 	// Assumes newCap >= size
 	void force_capacity(size_type newCapacity);
+
+	// Increases capacity by a factor of two
+	void grow() { reserve(std::max(2*size(), static_cast<size_type>(1))); }
 };
 
 template <typename T>
@@ -207,7 +211,7 @@ template <typename U>
 void vector<T>::push_back(U&& u)
 {
 	if (size() >= capacity())
-		reserve(size()*2);
+		grow();
 	new (&storage[_size++]) T(std::forward<U>(u));
 }
 
@@ -216,7 +220,7 @@ template <typename... Args>
 void vector<T>::emplace_back(Args&&... args)
 {
 	if (size() >= capacity())
-		reserve(size()*2);
+		grow();
 	new (&storage[_size++]) T(std::forward<Args>(args)...);
 }
 
@@ -224,8 +228,17 @@ template <typename T>
 template <typename U>
 void vector<T>::insert(iterator it, U&& u)
 {
-	if (size() >= capacity())
-		reserve(size()*2);
+	if (it == end()) {
+		push_back(std::forward<U>(u));
+		return;
+	}
+
+	if (size() >= capacity()) {
+		auto diff = it - begin(); // reallocation invalidates iterators
+		grow();
+		it = begin() + diff;
+	}
+
 	// Move everything from 'it' to the right, then construct in place.
 	new (&storage[_size++]) T(std::move(back())); // last element (uninitialized memory)
 	std::move( // storage in between (pre-last to 'it', inclusive)
@@ -240,8 +253,17 @@ template <typename T>
 template <typename... Args>
 void vector<T>::emplace(iterator it, Args&&... args)
 {
-	if (size() >= capacity())
-		reserve(size()*2);
+	if (it == end()) {
+		emplace_back(std::forward<Args>(args)...);
+		return;
+	}
+
+	if (size() >= capacity()) {
+		auto diff = it - begin(); // reallocation invalidates iterators
+		grow();
+		it = begin() + diff;
+	}
+
 	// Move everything from 'it' to the right, then construct in place.
 	new (&storage[_size++]) T(std::move(back())); // last element (uninitialized memory)
 	std::move( // storage in between (pre-last to 'it', inclusive)
@@ -275,7 +297,7 @@ void vector<T>::resize(size_type newSize)
 		std::destroy(begin()+newSize, end());
 	}
 	else if (newSize > size()) {
-		// Reserve exact amount of memory and value constructs
+		// Reserve exact amount of memory and value initialize new elements
 		reserve(newSize);
 		std::uninitialized_value_construct_n(end(), newSize-size()); // value initialization, as in std::vector
 	}

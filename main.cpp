@@ -1,6 +1,7 @@
 #include "vector.h"
 #include <iostream>
 #include <cassert>
+#include <string>
 // (void) cast used to remove warnings
 #define assertm(val, msg) assert(((void)msg, val))
 
@@ -127,6 +128,21 @@ int main()
 			assertm(!(vvv >= vv), "copy, then >=");
 		}
 	}
+
+	{	// Test insertion target iterator invalidation due to reallocation
+		vector<std::string> v;
+		v.push_back("a");
+		v.push_back("b");
+		v.insert(v.end()-2, "c");
+		v.insert(v.end()-2, "d");
+		v.insert(v.end()-2, "e");
+		v.insert(v.end()-2, "f");
+
+		for (auto s : v)
+			std::cout << s << " ";
+		std::cout << "\n";
+	}
+
 
 	{	// Test copies
 		vector<int> v;
